@@ -3,6 +3,19 @@
 # Usage: sudo bash install.sh [starter|media] [--vpn-provider NAME --vpn-key WG_PRIVATE_KEY] [--dry-run] [--dir PATH] [--no-start]
 set -euo pipefail
 
+# ---------- pinned image versions (tested together 2026-11-07; bump here, re-test, release) ----------
+V_HOMEPAGE="v2.7.0"
+V_KUMA="1.23.17"
+V_PORTAINER="2.45.3"
+V_NPM="2.16.0"
+V_GLUETUN="v3.41.3"
+V_QBIT="5.3.0_v2.1.2-ls486"
+V_PROWLARR="2.7.0.5723-ls167"
+V_SONARR="4.0.20.3014-ls3"
+V_RADARR="6.4.4.10685-ls325"
+V_JELLYFIN="12.4ubu2604-ls58"
+V_SEERR="v3.5.1"
+
 PROFILE="starter"
 DIR=""
 DRY=0
@@ -112,7 +125,7 @@ x-arr: &arr
 
 services:
   gluetun:
-    image: qmcgaw/gluetun:v3
+    image: qmcgaw/gluetun:${V_GLUETUN}
     container_name: gluetun
     restart: unless-stopped
     cap_add: [NET_ADMIN]
@@ -125,7 +138,7 @@ services:
 
   qbittorrent:
     <<: *arr
-    image: lscr.io/linuxserver/qbittorrent:latest
+    image: lscr.io/linuxserver/qbittorrent:${V_QBIT}
     container_name: qbittorrent
     network_mode: "service:gluetun"
     depends_on:
@@ -139,34 +152,34 @@ services:
 
   prowlarr:
     <<: *arr
-    image: lscr.io/linuxserver/prowlarr:latest
+    image: lscr.io/linuxserver/prowlarr:${V_PROWLARR}
     container_name: prowlarr
     ports: ["9696:9696"]
     volumes: ["./config/prowlarr:/config"]
 
   sonarr:
     <<: *arr
-    image: lscr.io/linuxserver/sonarr:latest
+    image: lscr.io/linuxserver/sonarr:${V_SONARR}
     container_name: sonarr
     ports: ["8989:8989"]
     volumes: ["./config/sonarr:/config", "./data:/data"]
 
   radarr:
     <<: *arr
-    image: lscr.io/linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr:${V_RADARR}
     container_name: radarr
     ports: ["7878:7878"]
     volumes: ["./config/radarr:/config", "./data:/data"]
 
   jellyfin:
     <<: *arr
-    image: lscr.io/linuxserver/jellyfin:latest
+    image: lscr.io/linuxserver/jellyfin:${V_JELLYFIN}
     container_name: jellyfin
     ports: ["8096:8096"]
     volumes: ["./config/jellyfin:/config", "./data/media:/data/media:ro"]
 
   seerr:
-    image: ghcr.io/seerr-team/seerr:latest
+    image: ghcr.io/seerr-team/seerr:${V_SEERR}
     container_name: seerr
     init: true
     restart: unless-stopped
@@ -187,7 +200,7 @@ cat > "$OUT/docker-compose.yml" <<COMPOSE
 name: ${PROJECT}
 services:
   homepage:
-    image: ghcr.io/gethomepage/homepage:latest
+    image: ghcr.io/gethomepage/homepage:${V_HOMEPAGE}
     container_name: homepage
     restart: unless-stopped
     ports:
@@ -199,7 +212,7 @@ services:
       - ./homepage/images:/app/public/images
 
   uptime-kuma:
-    image: louislam/uptime-kuma:1
+    image: louislam/uptime-kuma:${V_KUMA}
     container_name: uptime-kuma
     restart: unless-stopped
     ports:
@@ -208,7 +221,7 @@ services:
       - uptime-kuma-data:/app/data
 
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:${V_PORTAINER}
     container_name: portainer
     restart: unless-stopped
     security_opt:
@@ -221,7 +234,7 @@ services:
       - portainer-data:/data
 
   nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:latest
+    image: jc21/nginx-proxy-manager:${V_NPM}
     container_name: nginx-proxy-manager
     restart: unless-stopped
     ports:

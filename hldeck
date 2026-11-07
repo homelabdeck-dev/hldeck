@@ -42,7 +42,8 @@ cmd_update() {
     dc "$d" up -d
   done
   docker image prune -f >/dev/null
-  say "Done."
+  say "Done. Image versions are pinned for stability. To move to newer tested versions,"
+  say "re-run the installer (your data and settings are kept): curl -fsSL https://homelabdeck.dev/install.sh | sudo bash -s -- <starter|media>"
 }
 
 # Backup = compose + app configs + named volumes. Media/torrent data is NOT included
@@ -57,9 +58,9 @@ cmd_backup() {
     say "Backing up $name..."
     local proj; proj="$(dc "$d" config --format json 2>/dev/null | python3 -c 'import sys,json;print(json.load(sys.stdin)["name"])' 2>/dev/null || echo "$name")"
     # named volumes of this compose project
-    docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null
+    docker image inspect alpine:3.22 >/dev/null 2>&1 || docker pull -q alpine:3.22 >/dev/null
     for v in $(docker volume ls -q --filter "label=com.docker.compose.project=$proj"); do
-      docker run --rm -v "$v":/v:ro -v "$tmp":/o alpine tar czf "/o/volume-$v.tar.gz" -C /v . >/dev/null
+      docker run --rm -v "$v":/v:ro -v "$tmp":/o alpine:3.22 tar czf "/o/volume-$v.tar.gz" -C /v . >/dev/null
     done
     tar czf "$out" -C "$d" --exclude='./data' --exclude='./docker-compose.yml.bak.*' . -C "$tmp" . 
     rm -rf "$tmp"; chmod 600 "$out"
