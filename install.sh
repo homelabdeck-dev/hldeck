@@ -302,6 +302,11 @@ if [ "$START" = 1 ]; then
   done
 fi
 
+# Connect the apps to each other (needs qBittorrent, so only when the VPN key is set)
+if [ "$PROFILE" = media ] && [ "$START" = 1 ] && [ "$VPN_READY" = 1 ] && [ "$fail" = 0 ]; then
+  /usr/local/bin/hldeck wire "$OUT" || say "Auto-connect failed; run 'hldeck wire' again later."
+fi
+
 # ---------- 5. summary ----------
 if [ "$PROFILE" = starter ]; then
 cat <<SUMMARY
@@ -330,7 +335,7 @@ SUMMARY
   else
     echo
     echo "  qBittorrent + VPN are NOT started yet (no VPN key)."
-    echo "  Edit $OUT/vpn.env (provider + WireGuard key), then run:  $COMPOSE_F up -d"
+    echo "  Edit $OUT/vpn.env (provider + WireGuard key), then run:  $COMPOSE_F up -d && hldeck wire"
   fi
 cat <<SUMMARY
 
