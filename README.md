@@ -1,5 +1,7 @@
 # hldeck - HomelabDeck mini installer
 
+Part of [HomelabDeck](https://homelabdeck.dev/installer). MIT licensed.
+
 Profiles:
 - `starter` - Homepage, Uptime Kuma, Portainer, Nginx Proxy Manager (dir /opt/hldeck)
 - `media` - Jellyfin, Seerr, Sonarr, Radarr, Prowlarr, qBittorrent behind gluetun (WireGuard, kill switch) (dir /opt/hldeck-media)
