@@ -1,4 +1,4 @@
-# hldeck - HomelabDeck mini installer
+# HLDeck - HomelabDeck mini installer (command: `hldeck`)
 
 Part of [HomelabDeck](https://homelabdeck.dev/installer). MIT licensed.
 
