@@ -48,7 +48,7 @@ FREE_GB=$(( $(df -Pk "$PARENT" | awk 'NR==2{print $4}') / 1024 / 1024 ))
 # ports used by the starter profile
 case "$PROFILE" in
   starter) PORTS="80 81 443 3000 3001 8000 9443" ;;
-  media)   PORTS="8080 8096 8989 7878 9696" ;;
+  media)   PORTS="8080 8096 8989 7878 9696 5055" ;;
 esac
 busy=""
 if command -v docker >/dev/null 2>&1 && [ -n "$(docker ps -q --filter label=com.docker.compose.project=$PROJECT 2>/dev/null)" ]; then
@@ -82,7 +82,7 @@ if [ "$DRY" = 1 ]; then OUT="$(mktemp -d)"; else OUT="$DIR"; mkdir -p "$OUT"; fi
 gen_media() {
 mkdir -p "$OUT/data/torrents" "$OUT/data/media/tv" "$OUT/data/media/movies" \
          "$OUT/config/qbittorrent" "$OUT/config/prowlarr" "$OUT/config/sonarr" \
-         "$OUT/config/radarr" "$OUT/config/jellyfin" "$OUT/config/gluetun"
+         "$OUT/config/radarr" "$OUT/config/jellyfin" "$OUT/config/seerr" "$OUT/config/gluetun"
 [ "$DRY" = 1 ] || chown -R 1000:1000 "$OUT/data" "$OUT/config"
 
 if [ ! -e "$OUT/vpn.env" ]; then
@@ -164,6 +164,18 @@ services:
     container_name: jellyfin
     ports: ["8096:8096"]
     volumes: ["./config/jellyfin:/config", "./data/media:/data/media:ro"]
+
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      TZ: "${TZ_NAME}"
+      PORT: "5055"
+    ports: ["5055:5055"]
+    volumes: ["./config/seerr:/app/config"]
 COMPOSE
 }
 
@@ -264,7 +276,7 @@ COMPOSE_F="docker compose -f $OUT/docker-compose.yml"
 if [ "$PROFILE" = starter ]; then
   CHECKS="Homepage:3000 Uptime-Kuma:3001 Portainer:9443 Nginx-Proxy-Manager:81"; SVCS=""
 else
-  CHECKS="Jellyfin:8096 Sonarr:8989 Radarr:7878 Prowlarr:9696"; SVCS="prowlarr sonarr radarr jellyfin"
+  CHECKS="Jellyfin:8096 Sonarr:8989 Radarr:7878 Prowlarr:9696 Seerr:5055"; SVCS="prowlarr sonarr radarr jellyfin seerr"
   # Without a VPN key we never start qBittorrent: no key = no torrent traffic.
   if [ "$VPN_READY" = 1 ]; then SVCS="$SVCS gluetun qbittorrent"; CHECKS="$CHECKS qBittorrent:8080"; fi
 fi
@@ -302,6 +314,7 @@ cat <<SUMMARY
   HomelabDeck media stack is up.
     Jellyfin   http://${IP}:8096     Sonarr   http://${IP}:8989
     Radarr     http://${IP}:7878     Prowlarr http://${IP}:9696
+    Seerr      http://${IP}:5055     (search/request movies and series; sign in with your Jellyfin account)
 SUMMARY
   if [ "$VPN_READY" = 1 ]; then
     echo "    qBittorrent http://${IP}:8080   (temporary password: docker logs qbittorrent)"

@@ -2,7 +2,7 @@
 
 Profiles:
 - `starter` - Homepage, Uptime Kuma, Portainer, Nginx Proxy Manager (dir /opt/hldeck)
-- `media` - Jellyfin, Sonarr, Radarr, Prowlarr, qBittorrent behind gluetun (WireGuard, kill switch) (dir /opt/hldeck-media)
+- `media` - Jellyfin, Seerr, Sonarr, Radarr, Prowlarr, qBittorrent behind gluetun (WireGuard, kill switch) (dir /opt/hldeck-media)
 
     sudo bash install.sh            # install
     sudo bash install.sh media --vpn-provider <name> --vpn-key <wireguard-private-key>
