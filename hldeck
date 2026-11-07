@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# hldeck - manage stacks installed by the HomelabDeck installer
+# Usage: hldeck status | update | backup [DEST_DIR] | export [DEST_DIR] | list | help
+set -euo pipefail
+
+say() { printf '\033[1;35m[hldeck]\033[0m %s\n' "$*"; }
+die() { printf '\033[1;31m[hldeck] ERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+command -v docker >/dev/null 2>&1 || die "Docker is not installed."
+
+# every stack = a directory /opt/hldeck* that holds a docker-compose.yml
+stacks() { for d in /opt/hldeck /opt/hldeck-*; do [ -f "$d/docker-compose.yml" ] && echo "$d"; done; return 0; }
+need_stacks() { [ -n "$(stacks)" ] || die "No hldeck stacks found in /opt."; }
+dc() { local d="$1"; shift; docker compose -f "$d/docker-compose.yml" "$@"; }
+IP="$(hostname -I 2>/dev/null | awk '{print $1}')"; IP="${IP:-localhost}"
+
+cmd_list() { need_stacks; stacks; }
+
+cmd_status() {
+  need_stacks
+  local bad=0
+  for d in $(stacks); do
+    say "$(basename "$d")  ($d)"
+    local rows; rows="$(dc "$d" ps -a --format '{{.Name}}|{{.State}}|{{.Health}}|{{.Ports}}')"
+    while IFS='|' read -r name state health ports; do
+      [ -n "$name" ] || continue
+      local mark="OK  "
+      if [ "$state" != running ] || [ "$health" = unhealthy ]; then mark="FAIL"; bad=1; fi
+      local port; port="$(printf '%s' "$ports" | grep -oE '[0-9]+->' | head -1 | tr -d '>-')"
+      local url="${port:+http://$IP:$port}"; [ "$name" = portainer ] && url="https://$IP:9443"
+      printf '  %s %-22s %-10s %s\n' "$mark" "$name" "${health:-$state}" "$url"
+    done <<< "$rows"
+  done
+  df -h /opt | awk 'NR==2{print "\n  Disk /opt: "$3" used, "$4" free ("$5")"}'
+  return "$bad"
+}
+
+cmd_update() {
+  need_stacks
+  for d in $(stacks); do
+    say "Updating $(basename "$d")..."
+    dc "$d" pull --quiet
+    dc "$d" up -d
+  done
+  docker image prune -f >/dev/null
+  say "Done."
+}
+
+# Backup = compose + app configs + named volumes. Media/torrent data is NOT included
+# (too large; back it up with your usual tools). Archive may contain secrets (vpn.env) -> chmod 600.
+cmd_backup() {
+  need_stacks
+  local dest="${1:-/var/backups/hldeck}" ts; ts="$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$dest"; chmod 700 "$dest"
+  for d in $(stacks); do
+    local name; name="$(basename "$d")"
+    local out="$dest/$name-$ts.tar.gz" tmp; tmp="$(mktemp -d)"
+    say "Backing up $name..."
+    local proj; proj="$(dc "$d" config --format json 2>/dev/null | python3 -c 'import sys,json;print(json.load(sys.stdin)["name"])' 2>/dev/null || echo "$name")"
+    # named volumes of this compose project
+    docker image inspect alpine >/dev/null 2>&1 || docker pull -q alpine >/dev/null
+    for v in $(docker volume ls -q --filter "label=com.docker.compose.project=$proj"); do
+      docker run --rm -v "$v":/v:ro -v "$tmp":/o alpine tar czf "/o/volume-$v.tar.gz" -C /v . >/dev/null
+    done
+    tar czf "$out" -C "$d" --exclude='./data' --exclude='./docker-compose.yml.bak.*' . -C "$tmp" . 
+    rm -rf "$tmp"; chmod 600 "$out"
+    say "  -> $out ($(du -h "$out" | cut -f1))"
+  done
+  # keep the last 7 backups per stack
+  for d in $(stacks); do ls -1t "$dest/$(basename "$d")"-*.tar.gz 2>/dev/null | tail -n +8 | xargs -r rm -f; done
+}
+
+# Export = plain Docker files you can run without hldeck. No secrets are included.
+cmd_export() {
+  need_stacks
+  local dest="${1:-./hldeck-export}"; mkdir -p "$dest"
+  for d in $(stacks); do
+    local name; name="$(basename "$d")"; mkdir -p "$dest/$name"
+    cp "$d/docker-compose.yml" "$dest/$name/docker-compose.yml"
+    [ -f "$d/vpn.env" ] && sed -E 's/^(WIREGUARD_PRIVATE_KEY)=.*/\1=CHANGE_ME/' "$d/vpn.env" > "$dest/$name/vpn.env.example"
+    cat > "$dest/$name/README.txt" <<TXT
+Plain Docker Compose files exported by hldeck. No hldeck needed:
+  docker compose up -d
+Config folders (./config, ./data, ./homepage, ./npm) are not included - copy them from the old host if you want your settings.
+TXT
+    say "Exported $name -> $dest/$name"
+  done
+}
+
+cmd_help() { sed -n 2,3p "$0"; }
+
+case "${1:-help}" in
+  list) cmd_list ;;
+  status) cmd_status ;;
+  update) cmd_update ;;
+  backup) shift; cmd_backup "$@" ;;
+  export) shift; cmd_export "$@" ;;
+  help|-h|--help) cmd_help ;;
+  *) cmd_help; exit 2 ;;
+esac

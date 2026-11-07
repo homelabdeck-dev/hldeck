@@ -15,5 +15,6 @@ Media notes: without a VPN key, qBittorrent and gluetun are NOT started (writes 
 Tested 2026-11-07: media without key OK; with an invalid key gluetun stays unhealthy and qBittorrent refuses to start (fail-closed). NOT yet tested: a real working tunnel.
 In Proxmox LXC add `-dev0 /dev/net/tun,mode=0666` (and nesting=1,keyctl=1) for gluetun.
 
-Roadmap: stage 3 status/backup/export, stage 4 *arr auto-wiring.
+Stage 3 done: `hldeck status|update|backup|export` (installed to /usr/local/bin by install.sh). Site page: homelabdeck.dev/installer.
+Roadmap: stage 4 *arr auto-wiring.
 Known: images use upstream tags from the HomelabDeck catalog (some `latest`); pin versions before public release.

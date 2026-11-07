@@ -270,6 +270,14 @@ if [ "$DRY" = 1 ]; then
   exit 0
 fi
 
+# ---------- 3b. hldeck CLI ----------
+if [ "$DRY" = 0 ]; then
+  SELF="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")"
+  if [ -f "$SELF/hldeck" ]; then install -m 755 "$SELF/hldeck" /usr/local/bin/hldeck
+  else curl -fsSL "${HLDECK_URL:-https://homelabdeck.dev/hldeck.sh}" -o /usr/local/bin/hldeck && chmod 755 /usr/local/bin/hldeck \
+       || say "Could not install the hldeck command (optional)."; fi
+fi
+
 # ---------- 4. start ----------
 fail=0
 COMPOSE_F="docker compose -f $OUT/docker-compose.yml"
@@ -305,6 +313,7 @@ cat <<SUMMARY
     Nginx Proxy Manager http://${IP}:81     (create the admin account on first visit)
 
   Files: $OUT   (stop: $COMPOSE_F down)
+  Manage: hldeck status | update | backup | export
   Guides: https://homelabdeck.dev/en/guides
 
 SUMMARY
@@ -325,6 +334,7 @@ SUMMARY
   fi
 cat <<SUMMARY
 
+  Manage: hldeck status | update | backup | export
   Media folders: $OUT/data/torrents, data/media/tv, data/media/movies (one /data mount = hardlinks work)
   Files: $OUT   Guide: https://homelabdeck.dev/en/guides/jellyfin-sonarr-radarr-stack-proxmox-lxc
 
