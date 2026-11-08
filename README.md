@@ -2,12 +2,48 @@
 
 Part of [HomelabDeck](https://homelabdeck.dev/installer). MIT licensed.
 
-Profiles:
+## Quick start (beginners)
+
+You need a Debian or Ubuntu machine (a VM, a Proxmox LXC container, a mini PC or a Raspberry Pi 64-bit) with internet access and at least 5 GB free. You run the commands in its terminal as root, or put `sudo` in front.
+
+**1. Pick ONE command and paste it into the terminal:**
+
+Starter stack (dashboard, monitoring, Docker manager, reverse proxy):
+
+    curl -fsSL https://homelabdeck.dev/install.sh | sudo bash -s -- starter
+
+Media Lite stack (Jellyfin, Seerr, Sonarr, Radarr, Prowlarr, qBittorrent; no VPN, for your own and legally obtained media):
+
+    curl -fsSL https://homelabdeck.dev/install.sh | sudo bash -s -- media-lite
+
+Media stack with VPN kill switch (needs a WireGuard key from your VPN provider):
+
+    curl -fsSL https://homelabdeck.dev/install.sh | sudo bash -s -- media --vpn-provider PROVIDER_NAME --vpn-key YOUR_WIREGUARD_KEY
+
+**2. Wait a few minutes.** The installer installs Docker if it is missing, downloads the apps and starts them. At the end it prints the address of every app, for example `http://192.168.1.50:8096`. Open them in your browser.
+
+**3. Check it any time:** `hldeck status`
+
+Want to read the script first? Download it, read it, then run it:
+
+    curl -fsSLO https://homelabdeck.dev/install.sh
+    less install.sh
+    sudo bash install.sh media-lite
+
+Try without installing anything: `bash install.sh media-lite --dry-run`
+
+Running in a Proxmox LXC? Enable `nesting` and `keyctl` in the container's Options > Features first (the `media` stack with VPN also needs `/dev/net/tun`, see below).
+
+What stays manual after the media stacks: create the Jellyfin user and libraries, add your indexers in Prowlarr, sign in to Seerr. The installer prints these steps at the end.
+
+## Profiles
+
 - `starter` - Homepage, Uptime Kuma, Portainer, Nginx Proxy Manager (dir /opt/hldeck)
 - `media` - Jellyfin, Seerr, Sonarr, Radarr, Prowlarr, qBittorrent behind gluetun (WireGuard, kill switch) (dir /opt/hldeck-media)
 - `media-lite` - the same media stack but qBittorrent runs directly, WITHOUT a VPN (dir /opt/hldeck-media-lite). For your own and legally obtained media; `hldeck wire` runs automatically.
 
-    sudo bash install.sh            # install
+    sudo bash install.sh            # install (starter)
+    sudo bash install.sh media-lite
     sudo bash install.sh media --vpn-provider <name> --vpn-key <wireguard-private-key>
     bash install.sh --dry-run       # generate files in a temp dir, change nothing
 
