@@ -27,6 +27,7 @@ cmd_status() {
       if [ "$state" != running ] || [ "$health" = unhealthy ]; then mark="FAIL"; bad=1; fi
       local port; port="$(printf '%s' "$ports" | grep -oE '[0-9]+->' | head -1 | tr -d '>-')"
       local url="${port:+http://$IP:$port}"; [ "$name" = portainer ] && url="https://$IP:9443"
+      [ "$name" = qbittorrent ] && url="http://$IP:8080"
       printf '  %s %-22s %-10s %s\n' "$mark" "$name" "${health:-$state}" "$url"
     done <<< "$rows"
   done
@@ -98,7 +99,7 @@ cmd_wire() {
 import json, os, re, secrets, subprocess, sys, time, urllib.request, urllib.parse, http.cookiejar
 
 D = os.environ["HLDECK_DIR"]; IP = os.environ["HLDECK_IP"]
-QB_HOST = os.environ.get("HLDECK_QBIT_HOST", "gluetun")   # qBittorrent shares gluetun's network
+QB_HOST = os.environ.get("HLDECK_QBIT_HOST") or ("gluetun" if "gluetun:" in open(f"{D}/docker-compose.yml").read() else "qbittorrent")   # media: qBittorrent shares gluetun's network; media-lite: direct
 def say(m): print("\033[1;35m[hldeck]\033[0m " + m, flush=True)
 def die(m): print("\033[1;31m[hldeck] ERROR:\033[0m " + m, file=sys.stderr); sys.exit(1)
 

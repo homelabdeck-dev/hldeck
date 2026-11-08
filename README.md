@@ -5,6 +5,7 @@ Part of [HomelabDeck](https://homelabdeck.dev/installer). MIT licensed.
 Profiles:
 - `starter` - Homepage, Uptime Kuma, Portainer, Nginx Proxy Manager (dir /opt/hldeck)
 - `media` - Jellyfin, Seerr, Sonarr, Radarr, Prowlarr, qBittorrent behind gluetun (WireGuard, kill switch) (dir /opt/hldeck-media)
+- `media-lite` - the same media stack but qBittorrent runs directly, WITHOUT a VPN (dir /opt/hldeck-media-lite). For your own and legally obtained media; `hldeck wire` runs automatically.
 
     sudo bash install.sh            # install
     sudo bash install.sh media --vpn-provider <name> --vpn-key <wireguard-private-key>
@@ -26,3 +27,5 @@ Images are pinned to exact versions (variables V_* at the top of install.sh, tes
 Tunnel tested 2026-11-07 (no paid VPN): self-hosted WireGuard server (linuxserver/wireguard) in the same LXC, gluetun with VPN_SERVICE_PROVIDER=custom. Results: gluetun healthy, qBittorrent traffic goes through the tunnel, `hldeck wire` with default host `gluetun` passes Sonarr/Radarr download-client tests, kill switch blocks internet AND LAN when the server is stopped and traffic resumes when it returns.
 Custom (own server) vpn.env needs: VPN_SERVICE_PROVIDER=custom, WIREGUARD_PRIVATE_KEY, WIREGUARD_PUBLIC_KEY, WIREGUARD_ADDRESSES, WIREGUARD_ENDPOINT_IP, WIREGUARD_ENDPOINT_PORT (+ optional WIREGUARD_PRESHARED_KEY).
 Not tested: a commercial provider (Mullvad etc.).
+
+media-lite tested 2026-11-08 in LXC 199 (Debian 13): clean install, all 6 services answer, `hldeck wire` connects Sonarr/Radarr to qBittorrent (host `qbittorrent`) and Prowlarr to both, idempotent rerun OK, `media` profile compose unchanged (byte-identical dry-run) and still skips qBittorrent without a key.
