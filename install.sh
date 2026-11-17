@@ -331,6 +331,9 @@ if [ "$DRY" = 0 ]; then
   if [ -f "$SELF/hldeck" ]; then install -m 755 "$SELF/hldeck" /usr/local/bin/hldeck
   else curl -fsSL "${HLDECK_URL:-https://homelabdeck.dev/hldeck.sh}" -o /usr/local/bin/hldeck && chmod 755 /usr/local/bin/hldeck \
        || say "Could not install the hldeck command (optional)."; fi
+  # Some shells (Proxmox LXC console, pct enter) have no /usr/local/bin in PATH:
+  # also link it into /usr/bin, which is always there.
+  if [ -x /usr/local/bin/hldeck ] && [ ! -e /usr/bin/hldeck ]; then ln -s /usr/local/bin/hldeck /usr/bin/hldeck; fi
 fi
 
 # ---------- 4. start ----------
